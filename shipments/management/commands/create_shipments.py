@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from shipments.models import Shipment, ShipmentProduct
 from orders.models import Order
 
+
 class Command(BaseCommand):
     """
         Workflow to create shipments
@@ -39,7 +40,7 @@ class Command(BaseCommand):
         parser.add_argument('--start_date', type=str)
         parser.add_argument('--end_date', type=str)
 
-    def delivery_dates(self, start_date_str=None, end_date_str=None):
+    def delivery_dates(self, start_date: str = None, end_date: str = None):
         """
 
             return the range in which we can deliver
@@ -50,17 +51,17 @@ class Command(BaseCommand):
         """
         # calculate default dates
         date = datetime.now()
-        if not start_date_str:
-            start_date_str = f"{self.DELIVERY_START_DAY} {date.year}"
-        if not end_date_str:
-            end_date_str = f"{self.DELIVERY_END_DAY} {date.year}"
+        if not start_date:
+            start_date = f"{self.DELIVERY_START_DAY} {date.year}"
+        if not end_date:
+            end_date = f"{self.DELIVERY_END_DAY} {date.year}"
 
         return (
-            datetime.strptime(start_date_str, self.DATE_FORMAT),
-            datetime.strptime(end_date_str, self.DATE_FORMAT)
+            datetime.strptime(start_date, self.DATE_FORMAT),
+            datetime.strptime(end_date, self.DATE_FORMAT)
         )
 
-    def caculate_shipping_dates(self, spacing, start_date, end_date):
+    def caculate_shipping_dates(self, spacing: int, start_date: datetime, end_date: datetime):
         """
             calculate the days we can ship on. We can only ship every (spacing) days:
 
@@ -72,7 +73,7 @@ class Command(BaseCommand):
         # calculate time between dates
         date_delta = end_date - start_date
         # skip by spacing
-        return [(start_date + timedelta(days=i)) for i in range(0, date_delta.days + 1, spacing)]
+        return [(start_date + timedelta(days=i)) for i in range(0, date_delta.days, spacing)]
 
     def unfulfilled_orders(self, date=None):
         """
