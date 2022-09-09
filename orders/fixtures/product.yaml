@@ -1,0 +1,72 @@
+- model: orders.product
+  pk: 1
+  fields:
+    item: 1
+    order: 1
+    quantity: 4
+- model: orders.product
+  pk: 2
+  fields:
+    item: 2
+    order: 1
+    quantity: 1
+- model: orders.product
+  pk: 3
+  fields:
+    item: 3
+    order: 1
+    quantity: 1
+- model: orders.product
+  pk: 4
+  fields:
+    item: 6
+    order: 2
+    quantity: 4
+- model: orders.product
+  pk: 5
+  fields:
+    item: 4
+    order: 1
+    quantity: 1
+- model: orders.product
+  pk: 6
+  fields:
+    item: 1
+    order: 2
+    quantity: 1
+- model: orders.product
+  pk: 7
+  fields:
+    item: 1
+    order: 3
+    quantity: 2
+- model: orders.product
+  pk: 8
+  fields:
+    item: 1
+    order: 4
+    quantity: 1
+- model: orders.product
+  pk: 9
+  fields:
+    item: 5
+    order: 5
+    quantity: 4
+- model: orders.product
+  pk: 11
+  fields:
+    item: 1
+    order: 6
+    quantity: 10
+- model: orders.product
+  pk: 12
+  fields:
+    item: 6
+    order: 6
+    quantity: 10
+- model: orders.product
+  pk: 13
+  fields:
+    item: 5
+    order: 6
+    quantity: 1

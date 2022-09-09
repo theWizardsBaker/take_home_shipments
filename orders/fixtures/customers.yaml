@@ -1,0 +1,30 @@
+- model: orders.customer
+  pk: 1
+  fields:
+    fname: "Justin"
+    lname: "Le Tourneau"
+    address_1: "234 fake street"
+    address_2: ""
+    city: "Columbia"
+    state: "MO"
+    zip: 65203
+- model: orders.customer
+  pk: 2
+  fields:
+    fname: "John"
+    lname: "Richard"
+    address_1: "111 Ave"
+    address_2: ""
+    city: "St. Charles"
+    state: "MO"
+    zip: 63304
+- model: orders.customer
+  pk: 3
+  fields:
+    fname: "Jeanne"
+    lname: "Poli"
+    address_1: "3558 Prescott Dr"
+    address_2: "Apartment 2"
+    city: "Denver"
+    state: "Colorado"
+    zip: 80211

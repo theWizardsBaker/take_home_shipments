@@ -1,0 +1,36 @@
+- model: orders.order
+  pk: 1
+  fields:
+    customer: 1
+    is_fulfilled: False
+    ordered_at: "2022-05-16T17:41:28+00:00"
+- model: orders.order
+  pk: 2
+  fields:
+    customer: 2
+    is_fulfilled: True
+    ordered_at: "2022-02-01T17:41:28+00:00"
+- model: orders.order
+  pk: 3
+  fields:
+    customer: 1
+    is_fulfilled: False
+    ordered_at: "2022-04-20T17:41:28+00:00"
+- model: orders.order
+  pk: 4
+  fields:
+    customer: 3
+    is_fulfilled: True
+    ordered_at: "2022-04-16T17:41:28+00:00"
+- model: orders.order
+  pk: 5
+  fields:
+    customer: 3
+    is_fulfilled: False
+    ordered_at: "2022-04-06T17:41:28+00:00"
+- model: orders.order
+  pk: 6
+  fields:
+    customer: 1
+    is_fulfilled: False
+    ordered_at: "2022-05-25T17:41:28+00:00"

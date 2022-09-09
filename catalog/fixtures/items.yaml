@@ -1,0 +1,42 @@
+- model: catalog.item
+  pk: 1
+  fields:
+    name: "Product 1"
+    weight: 1
+    stock: 100
+    price: 10.00
+- model: catalog.item
+  pk: 2
+  fields:
+    name: "Product 2"
+    weight: 1.4
+    stock: 50
+    price: 12.00
+- model: catalog.item
+  pk: 3
+  fields:
+    name: "Product 3"
+    weight: 2
+    stock: 40
+    price: 10.00
+- model: catalog.item
+  pk: 4
+  fields:
+    name: "Product 4"
+    weight: 1.1
+    stock: 450
+    price: 5.00
+- model: catalog.item
+  pk: 5
+  fields:
+    name: "Product 5"
+    weight: 1.8
+    stock: 100
+    price: 1.00
+- model: catalog.item
+  pk: 6
+  fields:
+    name: "Product 6"
+    weight: 1.2
+    stock: 10
+    price: 10.00
