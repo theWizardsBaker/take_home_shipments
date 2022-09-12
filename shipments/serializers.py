@@ -21,9 +21,33 @@ class ShipmentUpdateSerializer(serializers.ModelSerializer):
         read_only_fields = ['order']
 
 
+class ShipmentProductsSerializer(serializers.ModelSerializer):
+
+    from orders.serializers import ProductSerializer
+
+    product = ProductSerializer()
+
+    class Meta:
+        model = ShipmentProduct
+        fields = ['id', 'quantity', 'product']
+
+
+class ProductListSerializer(serializers.ModelSerializer):
+
+    # from orders.serializers import ProductSerializer
+    from catalog.serializers import ItemSerializer
+
+    item = ItemSerializer()
+
+    class Meta:
+        model = ShipmentProduct
+        fields = ['id', 'quantity', 'item']
+
+
 class ShipmentViewSerializer(serializers.ModelSerializer):
     shipping_address = serializers.CharField(source="order.customer.shipping_address")
     order_fulfilled = serializers.BooleanField(source="order.is_fulfilled")
+    shipping_products = ProductListSerializer(many=True)
 
     class Meta:
         model = Shipment
@@ -45,6 +69,7 @@ class ShipmentProductViewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Shipment
         fields = [
+            'id',
             'has_shipped',
             'shipping_address',
             'shipping_date',
@@ -53,13 +78,3 @@ class ShipmentProductViewSerializer(serializers.ModelSerializer):
         ]
         depth = 1
 
-
-class ShipmentProductsSerializer(serializers.ModelSerializer):
-
-    from orders.serializers import ProductSerializer
-
-    products = ProductSerializer(source="shipping_products", many=True)
-
-    class Meta:
-        model = Shipment
-        fields = ['id', 'products']

@@ -1,5 +1,3 @@
-from django.shortcuts import render
-from django.template import loader
 from rest_framework import viewsets, permissions, mixins, response, decorators
 from .models import Shipment, ShipmentProduct
 from .serializers import ShipmentSerializer, ShipmentUpdateSerializer, ShipmentViewSerializer, ShipmentProductsSerializer
@@ -31,7 +29,8 @@ class ShipmentViewSet(CreateUpdateListRetrieveViewSet):
     """
     @decorators.action(methods=['get'], detail=True, permission_classes=[permissions.AllowAny])
     def packaged_products(self, request, pk=None):
-        products_set = self.queryset.filter(id=pk)
-        serializer = ShipmentProductsSerializer(products_set, many=True)
+        shipment = self.queryset.filter(id=pk)
+        shipment_products = ShipmentProduct.objects.filter(shipment=shipment[0])
+        serializer = ShipmentProductsSerializer(shipment_products, many=True)
         return response.Response(serializer.data)
 

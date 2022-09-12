@@ -2,6 +2,7 @@ from factory.django import DjangoModelFactory
 from faker import Faker
 
 from .models import Customer, Order
+from catalog.factories import ItemFactory
 
 faker = Faker()
 
@@ -17,6 +18,7 @@ class CustomerFactory(DjangoModelFactory):
 
     class Meta:
         model = Customer
+        django_get_or_create = ('fname', 'lname', 'address_1', 'address_2', 'city', 'state', 'zip',)
 
 
 class OrderFactory(DjangoModelFactory):
@@ -26,3 +28,14 @@ class OrderFactory(DjangoModelFactory):
 
     class Meta:
         model = Order
+        django_get_or_create = ('customer', 'ordered_at', 'is_fulfilled',)
+
+
+class ProductFactory(DjangoModelFactory):
+    item = ItemFactory()
+    order = OrderFactory()
+    quantity = faker.random_int(1, 12)
+
+    class Meta:
+        model = Order
+        django_get_or_create = ('item', 'order', 'quantity',)

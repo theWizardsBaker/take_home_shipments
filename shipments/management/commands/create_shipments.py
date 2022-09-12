@@ -23,7 +23,6 @@ class Command(BaseCommand):
 
     DELIVERY_START_DAY = "April 1"
     DELIVERY_END_DAY = "October 1"
-
     DATE_FORMAT = '%B %d %Y'
 
     SHIPMENT_DAY_LIMIT = 3
@@ -40,7 +39,7 @@ class Command(BaseCommand):
         parser.add_argument('--start_date', type=str)
         parser.add_argument('--end_date', type=str)
 
-    def delivery_dates(self, start_date: str = None, end_date: str = None):
+    def get_delivery_dates(self, start_date: str = None, end_date: str = None):
         """
 
             return the range in which we can deliver
@@ -61,7 +60,7 @@ class Command(BaseCommand):
             datetime.strptime(end_date, self.DATE_FORMAT)
         )
 
-    def caculate_shipping_dates(self, spacing: int, start_date: datetime, end_date: datetime):
+    def calculate_shipping_dates(self, spacing: int, start_date: datetime, end_date: datetime):
         """
             calculate the days we can ship on. We can only ship every (spacing) days:
 
@@ -75,7 +74,15 @@ class Command(BaseCommand):
         # skip by spacing
         return [(start_date + timedelta(days=i)) for i in range(0, date_delta.days, spacing)]
 
-    def unfulfilled_orders(self, date=None):
+    def calculate_next_shipping_date(self, all_shipping_dates: list[datetime]):
+        """
+            calculate the number of days left in our shipping window
+
+            all_shipping_dates: list = list of dates that can be shipped
+        """
+        return list(filter(lambda ship_date: ship_date > datetime.now(), all_shipping_dates))
+
+    def get_unfulfilled_orders(self, start_date: datetime = None,  end_date: datetime = None):
         """
             calculate all the unfilled orders from our previous year's
             undelivered shipments until date (or today)
@@ -83,38 +90,89 @@ class Command(BaseCommand):
             date: date = date to stop looking for unfulfilled orders
         """
 
-        # get all deliveries from the previous year up to now
-        previous_year_delivery_end_date = datetime.strptime(f"{self.DELIVERY_END_DAY} {(date).year - 1}", '%B %d %Y')
+        # get all deliveries up to now by default
+        order_search_params = {
+            'is_fulfilled': False,
+            'ordered_at__lte': make_aware(start_date)
+        }
+
+        if end_date:
+            order_search_params['ordered_at__gte'] = make_aware(end_date)
+
         # find all unfulfiled orders
-        return Order.objects.filter(
-            is_fulfilled=False,
-            ordered_at__gte=make_aware(previous_year_delivery_end_date),
-            ordered_at__lte=make_aware(date),
-        ).order_by("ordered_at")
+        return Order.objects.filter(**order_search_params).order_by("ordered_at")
+
+    def ship_products(self, products, new_shipment):
+        """
+            pack products into a shipment
+
+            products: list[product] = produts from an order
+
+            business requirement: 
+            shipments must spread out by SHIPMENT_DAY_LIMIT days
+            To whatever extent possible, duplicate `Products` should be sent on different shipment dates.
+        """
+        products_to_pack = []
+
+        for product in products:
+            # move on to the next product if we can't fit this product into our package
+            if (product.item.weight + new_shipment.shipping_weight) > self.SHIPMENT_WEIGHT_LIMIT:
+                continue
+
+            # if there are still products to pack
+            if product.quantity > 0:
+                # pack at least 1
+                max_quantity = 1
+
+                # if we need to pack multiples, find out the quantity needed
+                if product.quantity > self.SHIPMENT_DAY_LIMIT:
+                    max_quantity = math.ceil(product.quantity / self.SHIPMENT_DAY_LIMIT)
+                    # make sure we can actually fit that quantity
+                    while ((max_quantity * product.item.weight) + new_shipment.shipping_weight) > self.SHIPMENT_WEIGHT_LIMIT:
+                        max_quantity -= 1
+
+                # we should also validate against the item stock
+                # product.item.stock
+
+                if max_quantity > 0:
+                    # pack new product in shipment
+                    products_to_pack.append(
+                        ShipmentProduct(
+                            quantity=max_quantity,
+                            product=product,
+                            shipment=new_shipment
+                        )
+                    )
+                    # reduce quantity needed
+                    product.quantity -= max_quantity
+                    # increase package weight
+                    new_shipment.shipping_weight += product.item.weight * max_quantity
+
+        return products_to_pack
 
     def handle(self, *args, **options):
 
-        delivery_start_date, delivery_end_date = self.delivery_dates(
+        delivery_start_date, delivery_end_date = self.get_delivery_dates(
             options['start_date'],
             options['end_date']
         )
 
         # list all the dates we can ship
-        all_shipping_dates = self.caculate_shipping_dates(
+        all_shipping_dates = self.calculate_shipping_dates(
             options['shipment_spacing'], delivery_start_date, delivery_end_date
         )
 
         # find the next shipping date based on the current day
-        next_shipping_dates = list(filter(lambda ship_date: ship_date > datetime.now(), all_shipping_dates))
+        next_shipping_dates = self.calculate_next_shipping_date(all_shipping_dates)
 
         # make sure we have enough days left to ship
         if len(next_shipping_dates) < self.SHIPMENT_DAY_LIMIT: 
             self.stdout.write(f"Not enough time to ship items, only {len(next_shipping_dates)} shipping days remain")
             return
 
-        # fake date for demonstration
-        unfulfilled_orders = self.unfulfilled_orders(
-            datetime.strptime("June 1 2022", '%B %d %Y')
+        unfulfilled_orders = self.get_unfulfilled_orders(
+            # datetime.strptime("June 1 2022", '%B %d %Y')
+            datetime.now()
         )
 
         self.stdout.write(f"Found {unfulfilled_orders.count()} Order(s) to process:")
@@ -137,7 +195,9 @@ class Command(BaseCommand):
 
                     This logic is probably not right
                 """
+
                 orders_to_fufill = [] 
+
                 # compare the shipped quantity to the ordered quantity
                 for s in shipments:
                     shipment_products = ShipmentProduct.objects.filter(shipment=s)
@@ -162,57 +222,18 @@ class Command(BaseCommand):
                         shipping_date=make_aware(next_shipping_dates[day_to_ship])
                     )
 
-                    new_shipment_products = []
-
-                    for product in products:
-                        """
-                            business requirement: 
-                            shipments must spread out by SHIPMENT_DAY_LIMIT days
-                            To whatever extent possible, duplicate `Products` should be sent on different shipment dates.
-                        """
-
-                        # move on to the next product if we can't fit this product into our package
-                        if (product.item.weight + new_shipment.shipping_weight) > self.SHIPMENT_WEIGHT_LIMIT:
-                            continue
-
-                        # if there are still products to pack
-                        if product.quantity > 0:
-                            # pack_multiples?
-                            max_quantity = 1
-
-                            # if we need to pack multiples, find out the quantity needed
-                            if product.quantity > self.SHIPMENT_DAY_LIMIT:
-                                max_quantity = math.ceil(product.quantity / self.SHIPMENT_DAY_LIMIT)
-                                # make sure we can actually fit that quantity
-                                while ((max_quantity * product.item.weight) + new_shipment.shipping_weight) > self.SHIPMENT_WEIGHT_LIMIT:
-                                    max_quantity -= 1
-
-                            # we could also check the stock here and decrement it
-                            # product.item.stock
-                            if max_quantity > 0:
-                                # pack new product in shipment
-                                new_shipment_products.append(
-                                    ShipmentProduct(
-                                        quantity=max_quantity,
-                                        product=product,
-                                        shipment=new_shipment
-                                    )
-                                )
-                                # reduce quantity needed
-                                product.quantity -= max_quantity
-                                # increase package weight
-                                new_shipment.shipping_weight += product.item.weight * max_quantity
+                    new_shipment_packed_products = self.ship_products(products, new_shipment)
 
                     # save shipments
                     new_shipment.save()
                     # save shipment products
-                    for sp in new_shipment_products:
+                    for sp in new_shipment_packed_products:
                         # reduce stock
                         # sp.product.item.stock -= sp.quantity
                         # sp.product.item.save()
                         sp.save()
 
-                    self.stdout.write(f"\tCreated {new_shipment}: with \n\t{new_shipment_products}")
+                    self.stdout.write(f"\tCreated {new_shipment}: with \n\t{new_shipment_packed_products}")
 
                     # roll over to the next day
                     day_to_ship += 1
