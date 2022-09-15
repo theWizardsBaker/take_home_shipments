@@ -177,7 +177,7 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Found {unfulfilled_orders.count()} Order(s) to process:")
 
-        for order in unfulfilled_orders:
+        for order in unfulfilled_orders.iterator():
             # log each order
             self.stdout.write(f"Order: {order}")
 
