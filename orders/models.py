@@ -64,6 +64,6 @@ class Product(models.Model):
         unique_together = ('item', 'order',)
 
     def __str__(self):
-        return f"Product ordered: {self.quantity} of \"{self.item}\""
+        return f"{self.quantity} of \"{self.item}\""
 
 

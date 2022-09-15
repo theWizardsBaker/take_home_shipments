@@ -19,7 +19,7 @@ class Shipment(models.Model):
     )
 
     def __str__(self):
-        return f"Shipment: {self.id}"
+        return f"Shipment: {self.id} @ {self.shipping_date}"
 
 
 class ShipmentProduct(models.Model):
